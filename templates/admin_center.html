@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+{% block title %}Admin Center{% endblock %}
+{% block content %}
+<div class="topbar"><span class="topbar-title">Admin Center</span></div>
+<div class="page">
+  <div style="max-width:900px;">
+
+    <!-- Email Config Card -->
+    <div class="card mb-5">
+      <div class="card-header">
+        <span class="card-title">📧 Email Integration</span>
+        {% if email_enabled %}
+        <span class="badge badge-resolved ml-auto"><span class="badge-dot"></span>Connected — {{ support_email }}</span>
+        {% else %}
+        <span class="badge badge-closed ml-auto"><span class="badge-dot"></span>Not Configured</span>
+        {% endif %}
+      </div>
+      <div class="card-body">
+        <p style="font-size:13.5px;color:var(--text2);margin-bottom:18px;line-height:1.7;">
+          Connect your support mailbox so incoming emails automatically create tickets. An acknowledgement email with the Ticket ID will be sent to the sender automatically.
+          <br><strong>For Gmail:</strong> use an App Password (Settings → Security → 2FA → App Passwords).
+        </p>
+        <form method="POST" action="/admin/email/config">
+          <div class="form-grid2">
+            <div class="form-group">
+              <label class="form-label">Support Email Address</label>
+              <input type="email" name="support_email" class="form-control" value="{{ support_email }}" placeholder="support@yourcompany.com" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Login Username</label>
+              <input type="text" name="username" class="form-control" value="{{ support_email }}" placeholder="same as support email usually">
+            </div>
+          </div>
+          <div class="form-grid2">
+            <div class="form-group">
+              <label class="form-label">App Password</label>
+              <input type="password" name="password" class="form-control" placeholder="Gmail App Password (16 chars)">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Email Provider</label>
+              <select name="smtp_host" class="form-control" onchange="updateImap(this.value)">
+                <option value="smtp.gmail.com">Gmail (smtp.gmail.com)</option>
+                <option value="smtp.office365.com">Outlook / Office365</option>
+                <option value="smtp.mail.yahoo.com">Yahoo Mail</option>
+              </select>
+              <input type="hidden" name="imap_host" id="imapHost" value="imap.gmail.com">
+            </div>
+          </div>
+          <div class="flex items-center gap-3">
+            <label class="check-wrap">
+              <input type="checkbox" name="enabled" {% if email_enabled %}checked{% endif %}>
+              <span>Enable email polling (checks inbox every 60 seconds)</span>
+            </label>
+            <button type="submit" class="btn btn-primary ml-auto">Save Email Config</button>
+          </div>
+        </form>
+
+        <hr class="div">
+        <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:10px;">🧪 Test Email Config</div>
+        <div style="display:flex;gap:8px;">
+          <input type="email" id="testEmail" class="form-control" placeholder="Send test to..." style="max-width:260px;">
+          <button onclick="testEmail()" class="btn btn-white">Send Test Email</button>
+          <span id="testResult" style="font-size:13px;line-height:36px;"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- How It Works -->
+    <div class="card mb-5">
+      <div class="card-header"><span class="card-title">📬 How Email-to-Ticket Works</span></div>
+      <div class="card-body">
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;">
+          <div style="text-align:center;padding:16px;">
+            <div style="font-size:32px;margin-bottom:10px;">📧</div>
+            <div style="font-weight:700;font-size:13px;margin-bottom:4px;">1. Email Arrives</div>
+            <div style="font-size:12.5px;color:var(--text3);">Customer sends email to your support address</div>
+          </div>
+          <div style="text-align:center;padding:16px;">
+            <div style="font-size:32px;margin-bottom:10px;">🎫</div>
+            <div style="font-weight:700;font-size:13px;margin-bottom:4px;">2. Ticket Created</div>
+            <div style="font-size:12.5px;color:var(--text3);">System auto-creates ticket with unique ID</div>
+          </div>
+          <div style="text-align:center;padding:16px;">
+            <div style="font-size:32px;margin-bottom:10px;">✅</div>
+            <div style="font-weight:700;font-size:13px;margin-bottom:4px;">3. ACK Email Sent</div>
+            <div style="font-size:12.5px;color:var(--text3);">Acknowledgement with Ticket ID sent to customer</div>
+          </div>
+          <div style="text-align:center;padding:16px;">
+            <div style="font-size:32px;margin-bottom:10px;">💬</div>
+            <div style="font-weight:700;font-size:13px;margin-bottom:4px;">4. Thread Updates</div>
+            <div style="font-size:12.5px;color:var(--text3);">Replies in ticket get emailed, customer replies update thread</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="admin-section-title">Manage</div>
+    <div class="admin-grid">
+      <a href="/admin/tickets" class="admin-tile"><div class="admin-tile-icon" style="background:#eff6ff;">🎫</div><div><div class="admin-tile-label">All Tickets</div><div class="admin-tile-sub">View and manage</div></div></a>
+      <a href="/admin/users" class="admin-tile"><div class="admin-tile-icon" style="background:#f0fdf4;">👥</div><div><div class="admin-tile-label">Users & Agents</div><div class="admin-tile-sub">Manage access</div></div></a>
+      <a href="/admin/users/add" class="admin-tile"><div class="admin-tile-icon" style="background:#fff7ed;">➕</div><div><div class="admin-tile-label">Add User</div><div class="admin-tile-sub">Create accounts</div></div></a>
+      <a href="/admin/tickets?status=Open" class="admin-tile"><div class="admin-tile-icon" style="background:#fffbeb;">🟡</div><div><div class="admin-tile-label">Open Tickets</div><div class="admin-tile-sub">Needs action</div></div></a>
+    </div>
+
+    <div class="admin-section-title">Users and Permissions</div>
+    <div class="admin-grid">
+      <a href="/admin/users?role=agent" class="admin-tile"><div class="admin-tile-icon" style="background:#f0fdf4;">🎯</div><div><div class="admin-tile-label">Agents</div><div class="admin-tile-sub">Support agents</div></div></a>
+      <a href="/admin/users?role=admin" class="admin-tile"><div class="admin-tile-icon" style="background:#fef2f2;">🔐</div><div><div class="admin-tile-label">Admins</div><div class="admin-tile-sub">Full access</div></div></a>
+      <a href="/admin/users?role=app" class="admin-tile"><div class="admin-tile-icon" style="background:#eff6ff;">👤</div><div><div class="admin-tile-label">App Users</div><div class="admin-tile-sub">Portal users</div></div></a>
+      <a href="/admin/users/add" class="admin-tile"><div class="admin-tile-icon" style="background:#f5f3ff;">➕</div><div><div class="admin-tile-label">Add User</div><div class="admin-tile-sub">New account</div></div></a>
+    </div>
+  </div>
+</div>
+<script>
+function updateImap(smtp){
+  const map = {'smtp.gmail.com':'imap.gmail.com','smtp.office365.com':'outlook.office365.com','smtp.mail.yahoo.com':'imap.mail.yahoo.com'};
+  document.getElementById('imapHost').value = map[smtp] || 'imap.gmail.com';
+}
+function testEmail(){
+  const to = document.getElementById('testEmail').value;
+  const res = document.getElementById('testResult');
+  if(!to){ res.textContent='Enter an email first'; return; }
+  res.textContent = 'Sending...';
+  fetch('/admin/email/test',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'test_email='+encodeURIComponent(to)})
+    .then(r=>r.json()).then(d=>{ res.textContent = d.ok ? '✅ Sent!' : '❌ Failed — check config'; });
+}
+</script>
+{% endblock %}

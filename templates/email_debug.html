@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+{% block title %}Email Debug{% endblock %}
+{% block content %}
+<div class="topbar">
+  <div class="topbar-breadcrumb"><a href="/admin/center">Admin Center</a> › Email Debug</div>
+  <div class="spacer"></div>
+  <a href="/admin/email/check" class="btn btn-primary">▶ Check Inbox Now</a>
+  <a href="/admin/dashboard" class="btn btn-white btn-sm">← Dashboard</a>
+</div>
+<div class="page">
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px;">
+
+    <!-- Config Status -->
+    <div class="card">
+      <div class="card-header"><span class="card-title">⚙️ Current Email Config</span></div>
+      <div class="card-body">
+        <table style="width:100%;font-size:13px;">
+          <tr><td style="padding:5px 0;color:var(--text3);width:40%;">Support Email</td>
+              <td style="font-weight:600;">{{ config.support_email }}</td></tr>
+          <tr><td style="padding:5px 0;color:var(--text3);">SMTP Host</td>
+              <td>{{ config.smtp_host }}:{{ config.smtp_port }}</td></tr>
+          <tr><td style="padding:5px 0;color:var(--text3);">IMAP Host</td>
+              <td>{{ config.imap_host }}:{{ config.imap_port }}</td></tr>
+          <tr><td style="padding:5px 0;color:var(--text3);">Poll Interval</td>
+              <td>Every {{ config.poll_interval }} seconds</td></tr>
+          <tr><td style="padding:5px 0;color:var(--text3);">Status</td>
+              <td>
+                {% if config.enabled %}
+                <span class="badge badge-resolved"><span class="badge-dot"></span>Enabled</span>
+                {% else %}
+                <span class="badge badge-closed"><span class="badge-dot"></span>Disabled</span>
+                {% endif %}
+              </td>
+          </tr>
+          <tr><td style="padding:5px 0;color:var(--text3);">Password Set</td>
+              <td>{% if config.password and config.password != 'your-app-password' %}
+                  <span style="color:var(--green);">✅ Yes</span>
+                  {% else %}<span style="color:var(--red);">❌ Not set</span>{% endif %}
+              </td>
+          </tr>
+        </table>
+        <hr class="div">
+        <a href="/admin/center" class="btn btn-white btn-sm">Edit Config →</a>
+      </div>
+    </div>
+
+    <!-- Quick Test -->
+    <div class="card">
+      <div class="card-header"><span class="card-title">🧪 Quick Steps</span></div>
+      <div class="card-body">
+        <div style="font-size:13px;line-height:2;color:var(--text2);">
+          <div>1️⃣ Make sure <code class="mono">enabled: True</code> in app.py</div>
+          <div>2️⃣ Make sure password is the <strong>App Password</strong> (not Gmail login)</div>
+          <div>3️⃣ IMAP must be ON in Gmail → Settings → Forwarding & POP/IMAP</div>
+          <div>4️⃣ Send a test email to <strong>{{ config.support_email }}</strong></div>
+          <div>5️⃣ Click <strong>"Check Inbox Now"</strong> button above</div>
+          <div>6️⃣ See results below — any ❌ means what to fix</div>
+        </div>
+        <hr class="div">
+        <div style="font-size:12px;color:var(--text3);">
+          Auto-poll runs every {{ config.poll_interval }}s in background.<br>
+          Use "Check Inbox Now" to trigger immediately.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Check Results -->
+  {% if results %}
+  <div class="card mb-4">
+    <div class="card-header"><span class="card-title">📋 Last Check Results</span></div>
+    <div class="card-body">
+      <div style="background:#0f172a;border-radius:8px;padding:16px 20px;font-family:'JetBrains Mono',monospace;font-size:13px;line-height:2;">
+        {% for r in results %}
+        <div style="color:{% if '✅' in r %}#4ade80{% elif '❌' in r %}#f87171{% elif '⚠️' in r %}#fbbf24{% elif 'ℹ️' in r %}#60a5fa{% else %}#e2e8f0{% endif %};">
+          {{ r }}
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Email Tickets -->
+  <div class="card mb-4">
+    <div class="card-header">
+      <span class="card-title">📧 Tickets Created from Email</span>
+      <span class="text-muted text-sm ml-auto">{{ tickets_from_email|length }} total</span>
+    </div>
+    {% if tickets_from_email %}
+    <div class="table-wrap">
+    <table>
+      <thead><tr><th>Ticket #</th><th>From</th><th>Email</th><th>Subject</th><th>Status</th><th>Created</th><th></th></tr></thead>
+      <tbody>
+        {% for t in tickets_from_email %}
+        <tr>
+          <td><span class="tkt-num">{{ t['ticket_number'] }}</span></td>
+          <td class="fw-600">{{ t['requester_name'] }}</td>
+          <td class="text-muted text-sm">{{ t['requester_email'] }}</td>
+          <td>{{ t['subject'][:60] }}{% if t['subject']|length > 60 %}...{% endif %}</td>
+          <td>
+            {% set s=t['status'] %}
+            {% if s=='Open' %}<span class="badge badge-open"><span class="badge-dot"></span>Open</span>
+            {% elif s=='In Progress' %}<span class="badge badge-inprog"><span class="badge-dot"></span>In Progress</span>
+            {% elif s=='Resolved' %}<span class="badge badge-resolved"><span class="badge-dot"></span>Resolved</span>
+            {% else %}<span class="badge badge-closed"><span class="badge-dot"></span>{{ s }}</span>{% endif %}
+          </td>
+          <td class="text-muted text-sm">{{ t['created_at'][:16] }}</td>
+          <td><a href="/admin/ticket/{{ t['id'] }}" class="btn btn-white btn-xs">View →</a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+    {% else %}
+    <div class="empty"><div class="empty-icon">📭</div><p>No email tickets yet. Send an email to {{ config.support_email }} then click Check Inbox.</p></div>
+    {% endif %}
+  </div>
+
+  <!-- Background Log -->
+  {% if log %}
+  <div class="card">
+    <div class="card-header"><span class="card-title">🖥️ Background Poller Log</span></div>
+    <div class="card-body">
+      <div style="background:#0f172a;border-radius:8px;padding:14px 18px;font-family:'JetBrains Mono',monospace;font-size:12px;line-height:1.8;max-height:300px;overflow-y:auto;">
+        {% for line in log %}
+        <div style="color:#94a3b8;">{{ line }}</div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

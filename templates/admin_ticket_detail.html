@@ -1,0 +1,266 @@
+{% extends "base.html" %}
+{% block title %}{{ ticket['ticket_number'] }}{% endblock %}
+{% block extra_styles %}
+<style>
+.avatar-dyn{width:34px;height:34px;font-size:13px;flex-shrink:0;border-radius:6px;display:flex;align-items:center;justify-content:center;font-weight:700;color:white;}
+.source-badge-email{background:#f0fdf4;color:#059669;border:1px solid #a7f3d0;padding:2px 9px;border-radius:4px;font-size:11px;font-weight:700;}
+.source-badge-web{background:#eff6ff;color:#2563eb;border:1px solid #dbeafe;padding:2px 9px;border-radius:4px;font-size:11px;font-weight:700;}
+.email-log-row{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border);font-size:12.5px;}
+.email-log-row:last-child{border-bottom:none;}
+</style>
+{% endblock %}
+{% block content %}
+<div class="topbar">
+  <div class="topbar-breadcrumb">
+    <a href="/admin/dashboard">Dashboard</a> › <a href="/admin/tickets">Tickets</a> › <span style="color:var(--blue)">{{ ticket['ticket_number'] }}</span>
+  </div>
+  <div class="spacer"></div>
+  {% if ticket['source']=='email' %}<span class="source-badge-email">📧 EMAIL</span>
+  {% else %}<span class="source-badge-web">🌐 WEB</span>{% endif %}
+  {% set s=ticket['status'] %}
+  {% if s=='Open' %}<span class="badge badge-open"><span class="badge-dot"></span>Open</span>
+  {% elif s=='In Progress' %}<span class="badge badge-inprog"><span class="badge-dot"></span>In Progress</span>
+  {% elif s=='Resolved' %}<span class="badge badge-resolved"><span class="badge-dot"></span>Resolved</span>
+  {% elif s=='Pending' %}<span class="badge badge-pending"><span class="badge-dot"></span>Pending</span>
+  {% else %}<span class="badge badge-closed"><span class="badge-dot"></span>{{ s }}</span>{% endif %}
+  <span class="prio prio-{{ ticket['priority']|lower }}">{{ ticket['priority'] }}</span>
+</div>
+
+<div class="page">
+  <div class="detail-layout" style="grid-template-columns:1fr 300px;">
+    <!-- LEFT -->
+    <div>
+      <!-- Ticket Info -->
+      <div class="card mb-4">
+        <div class="card-header">
+          <span class="tkt-num" style="font-size:14px;">{{ ticket['ticket_number'] }}</span>
+          <span class="text-muted text-sm" style="margin-left:10px;">{{ ticket['subject'] or ticket['service_type'] }}</span>
+        </div>
+        <div class="card-body">
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:16px;">
+            <div>
+              <div class="meta-lbl">Requester</div>
+              <div class="meta-val fw-600">{{ ticket['req_name'] or '—' }}</div>
+              <div class="text-muted text-sm">{{ ticket['req_email'] or '' }}</div>
+            </div>
+            <div>
+              <div class="meta-lbl">Service / Category</div>
+              <div class="meta-val">{{ ticket['service_type'] }} · {{ ticket['category'] }}</div>
+            </div>
+            <div>
+              <div class="meta-lbl">Source</div>
+              <div class="meta-val">
+                {% if ticket['source']=='email' %}📧 Email{% else %}🌐 Web Portal{% endif %}
+              </div>
+            </div>
+          </div>
+          {% if ticket['project_name'] or ticket['server_details'] %}
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+            {% if ticket['project_name'] %}<div><div class="meta-lbl">Project</div><div class="meta-val">{{ ticket['project_name'] }}</div></div>{% endif %}
+            {% if ticket['server_details'] %}<div><div class="meta-lbl">Server</div><div class="meta-val"><code class="mono">{{ ticket['server_details'] }}</code></div></div>{% endif %}
+          </div>
+          {% endif %}
+          <div class="meta-lbl" style="margin-bottom:6px;">{% if ticket['source']=='email' %}Email Body{% else %}Description{% endif %}</div>
+          <div style="font-size:14px;line-height:1.75;color:var(--text2);white-space:pre-wrap;">{{ ticket['description'] }}</div>
+          {% if ticket['tags'] %}
+          <div class="mt-3">{% for tag in ticket['tags'].split(',') %}{% if tag.strip() %}<span class="tag">{{ tag.strip() }}</span>{% endif %}{% endfor %}</div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Conversation Thread -->
+      <div class="card mb-4">
+        <div class="card-header">
+          <span class="card-title">💬 Conversation Thread</span>
+          {% if ticket['req_email'] %}
+          <span class="text-muted text-sm ml-auto">Replies auto-sent to {{ ticket['req_email'] }}</span>
+          {% endif %}
+        </div>
+        <div class="card-body">
+          {% if comments %}
+          <div class="thread mb-4">
+            {% for c in comments %}
+            <div class="thread-item">
+              <div class="avatar-dyn" data-color="{{ c['avatar_color'] or '#94a3b8' }}">
+                {{ (c['display_name'] or 'C')[0]|upper }}
+              </div>
+              <div style="flex:1;">
+                {% if c['comment_type']=='meeting' %}
+                <div class="meeting-card">
+                  <div class="meeting-header">
+                    <span style="font-size:18px;">📅</span>
+                    <span class="meeting-title">Meeting Scheduled</span>
+                    <span class="text-muted text-sm ml-auto">{{ c['created_at'][:16] }}</span>
+                  </div>
+                  {% for line in c['comment'].split('\n') %}
+                    {% if 'Join link:' in line %}
+                      <a href="{{ line.replace('Join link: ','').strip() }}" target="_blank" class="join-btn">🔗 Join Meeting</a>
+                    {% else %}
+                      <div style="font-size:13px;color:var(--text2);margin-bottom:4px;">{{ line }}</div>
+                    {% endif %}
+                  {% endfor %}
+                </div>
+                {% elif c['comment_type']=='email' %}
+                <!-- Email reply from customer -->
+                <div class="comment-box" style="border-left:3px solid #059669;">
+                  <div class="comment-head">
+                    <span class="comment-author">{{ c['display_name'] }}</span>
+                    <span style="font-size:10px;background:#f0fdf4;color:#059669;padding:1px 6px;border-radius:3px;font-weight:700;">📧 EMAIL</span>
+                    <span class="comment-time">{{ c['created_at'][:16] }}</span>
+                  </div>
+                  <div class="comment-text" style="white-space:pre-wrap;">{{ c['comment'] }}</div>
+                </div>
+                {% else %}
+                <div class="comment-box {% if c['is_internal'] %}internal{% endif %}">
+                  <div class="comment-head">
+                    <span class="comment-author">{{ c['display_name'] }}</span>
+                    {% if c['user_role'] in ('admin','agent') %}
+                      <span class="comment-role">AGENT</span>
+                      {% if not c['is_internal'] %}<span style="font-size:10px;background:#eff6ff;color:#2563eb;padding:1px 6px;border-radius:3px;font-weight:700;">📤 Emailed</span>{% endif %}
+                    {% endif %}
+                    {% if c['is_internal'] %}<span class="internal-tag">🔒 Internal</span>{% endif %}
+                    <span class="comment-time">{{ c['created_at'][:16] }}</span>
+                  </div>
+                  <div class="comment-text">{{ c['comment'] }}</div>
+                </div>
+                {% endif %}
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+          {% else %}
+          <p class="text-muted text-sm mb-4">No messages yet.</p>
+          {% endif %}
+
+          <hr class="div">
+          <form method="POST">
+            <input type="hidden" name="action" value="comment">
+            <div class="form-group">
+              <label class="form-label">Reply to Customer</label>
+              <textarea name="comment" class="form-control" rows="4" placeholder="Write a reply... (if not internal, will be emailed to {{ ticket['req_email'] or 'customer' }})" required></textarea>
+            </div>
+            <div class="flex items-center gap-2">
+              <label class="check-wrap">
+                <input type="checkbox" name="is_internal">
+                <span>🔒 Internal note only (NOT emailed to customer)</span>
+              </label>
+              <button type="submit" class="btn btn-primary ml-auto">Send Reply {% if ticket['req_email'] %}& Email{% endif %} →</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Email Log -->
+      {% if email_logs %}
+      <div class="card mb-4">
+        <div class="card-header"><span class="card-title">📧 Email Log</span></div>
+        <div class="card-body">
+          {% for log in email_logs %}
+          <div class="email-log-row">
+            <span style="font-size:16px;">{% if log['direction']=='outbound' %}📤{% else %}📥{% endif %}</span>
+            <div style="flex:1;">
+              <div class="fw-600" style="font-size:12.5px;">{{ log['subject'] }}</div>
+              <div class="text-muted text-sm">{{ log['direction']|capitalize }} · {{ log['to_email'] }}</div>
+            </div>
+            <span class="badge {% if log['status']=='sent' %}badge-resolved{% else %}badge-closed{% endif %}">
+              <span class="badge-dot"></span>{{ log['status'] }}
+            </span>
+            <span class="text-muted text-sm">{{ log['created_at'][:16] }}</span>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Activity Log -->
+      {% if activity %}
+      <div class="card">
+        <div class="card-header"><span class="card-title">📋 Activity Log</span></div>
+        <div class="card-body">
+          <div class="timeline">
+            {% for a in activity %}
+            <div class="tl-item">
+              <div class="tl-dot">⚙</div>
+              <div>
+                <div class="tl-text"><strong>{{ a['full_name'] }}</strong> — {{ a['action'] }}</div>
+                <div class="tl-time">{{ a['created_at'][:16] }}</div>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- RIGHT: Manage Panel -->
+    <div>
+      <div class="card" style="position:sticky;top:62px;">
+        <div class="card-header"><span class="card-title">⚙ Manage Ticket</span></div>
+        <div class="card-body">
+          <form method="POST">
+            <input type="hidden" name="action" value="update">
+            <div class="form-group">
+              <label class="form-label">Status</label>
+              <select name="status" class="form-control">
+                <option value="Open" {% if ticket['status']=='Open' %}selected{% endif %}>Open</option>
+                <option value="In Progress" {% if ticket['status']=='In Progress' %}selected{% endif %}>In Progress</option>
+                <option value="Pending" {% if ticket['status']=='Pending' %}selected{% endif %}>Pending</option>
+                <option value="Resolved" {% if ticket['status']=='Resolved' %}selected{% endif %}>Resolved</option>
+                <option value="Closed" {% if ticket['status']=='Closed' %}selected{% endif %}>Closed</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Priority</label>
+              <select name="priority" class="form-control">
+                <option value="Low" {% if ticket['priority']=='Low' %}selected{% endif %}>Low</option>
+                <option value="Medium" {% if ticket['priority']=='Medium' %}selected{% endif %}>Medium</option>
+                <option value="High" {% if ticket['priority']=='High' %}selected{% endif %}>High</option>
+                <option value="Critical" {% if ticket['priority']=='Critical' %}selected{% endif %}>Critical</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Assign To Agent</label>
+              <select name="assigned_to" class="form-control">
+                <option value="">— Unassigned —</option>
+                {% for a in agents %}
+                <option value="{{ a['username'] }}" {% if ticket['assigned_to']==a['username'] %}selected{% endif %}>{{ a['full_name'] }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Category</label>
+              <select name="category" class="form-control">
+                <option value="General" {% if ticket['category']=='General' %}selected{% endif %}>General</option>
+                <option value="Infrastructure" {% if ticket['category']=='Infrastructure' %}selected{% endif %}>Infrastructure</option>
+                <option value="Application" {% if ticket['category']=='Application' %}selected{% endif %}>Application</option>
+                <option value="Security" {% if ticket['category']=='Security' %}selected{% endif %}>Security</option>
+                <option value="Data" {% if ticket['category']=='Data' %}selected{% endif %}>Data</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Due Date</label>
+              <input type="date" name="due_date" class="form-control" value="{{ ticket['due_date'] or '' }}">
+            </div>
+            <div class="form-group">
+              <label class="form-label">📅 Meeting Link</label>
+              <input type="text" name="meeting_link" class="form-control" value="{{ ticket['meeting_link'] or '' }}" placeholder="https://meet.google.com/...">
+              <div class="form-hint">Saves and posts a Join Meeting button to the customer.</div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Resolution Note</label>
+              <textarea name="resolution_note" class="form-control" rows="3" placeholder="What was done to resolve this?">{{ ticket['resolution_note'] or '' }}</textarea>
+            </div>
+            <button type="submit" class="btn btn-primary w-full justify-center">💾 Save Changes</button>
+          </form>
+
+          <hr class="div">
+          <div class="meta-row mb-3"><div class="meta-lbl">Created</div><div class="meta-val text-sm">{{ ticket['created_at'][:16] }}</div></div>
+          <div class="meta-row"><div class="meta-lbl">Last Updated</div><div class="meta-val text-sm">{{ ticket['updated_at'][:16] }}</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>document.querySelectorAll('.avatar-dyn').forEach(function(el){el.style.background=el.getAttribute('data-color');});</script>
+{% endblock %}

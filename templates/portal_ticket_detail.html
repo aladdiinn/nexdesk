@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+{% block title %}{{ ticket['ticket_number'] }}{% endblock %}
+{% block extra_styles %}
+<style>
+.avatar-dyn{width:34px;height:34px;font-size:13px;flex-shrink:0;border-radius:6px;display:flex;align-items:center;justify-content:center;font-weight:700;color:white;}
+</style>
+{% endblock %}
+{% block content %}
+<div class="topbar">
+  <div class="topbar-breadcrumb">
+    <a href="/portal/dashboard">My Tickets</a> › <span style="color:var(--blue)">{{ ticket['ticket_number'] }}</span>
+  </div>
+  <div class="spacer"></div>
+  {% set s = ticket['status'] %}
+  {% if s=='Open' %}<span class="badge badge-open"><span class="badge-dot"></span>Open</span>
+  {% elif s=='In Progress' %}<span class="badge badge-inprog"><span class="badge-dot"></span>In Progress</span>
+  {% elif s=='Resolved' %}<span class="badge badge-resolved"><span class="badge-dot"></span>Resolved</span>
+  {% elif s=='Pending' %}<span class="badge badge-pending"><span class="badge-dot"></span>Pending</span>
+  {% else %}<span class="badge badge-closed"><span class="badge-dot"></span>{{ s }}</span>{% endif %}
+  <span class="prio prio-{{ ticket['priority']|lower }}">{{ ticket['priority'] }}</span>
+</div>
+<div class="page">
+  <div class="detail-layout">
+    <div>
+      <!-- Info card -->
+      <div class="card mb-4">
+        <div class="card-body">
+          <div class="flex items-center gap-2 mb-3">
+            <span class="tkt-num">{{ ticket['ticket_number'] }}</span>
+            <span class="text-muted text-sm">{{ ticket['service_type'] }}{% if ticket['category'] %} · {{ ticket['category'] }}{% endif %}</span>
+          </div>
+          <div style="font-size:14px;line-height:1.75;color:var(--text2);">{{ ticket['description'] }}</div>
+          {% if ticket['tags'] %}
+          <div class="mt-3">
+            {% for tag in ticket['tags'].split(',') %}{% if tag.strip() %}<span class="tag">{{ tag.strip() }}</span>{% endif %}{% endfor %}
+          </div>
+          {% endif %}
+          {% if ticket['status']=='Resolved' and ticket['resolution_note'] %}
+          <div style="margin-top:14px;padding:12px;background:var(--green-bg);border:1px solid var(--green-border);border-radius:var(--radius);">
+            <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--green);margin-bottom:4px;">✅ Resolution</div>
+            <div style="font-size:13.5px;color:var(--text2);">{{ ticket['resolution_note'] }}</div>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Conversation -->
+      <div class="card">
+        <div class="card-header"><span class="card-title">💬 Conversation</span></div>
+        <div class="card-body">
+          {% if comments %}
+          <div class="thread mb-4">
+            {% for c in comments %}
+            <div class="thread-item">
+              <div class="avatar-dyn" data-color="{{ c['avatar_color'] }}">{{ (c['full_name'] or 'U')[0] }}</div>
+              <div style="flex:1;">
+                {% if c['comment_type']=='meeting' %}
+                <div class="meeting-card">
+                  <div class="meeting-header">
+                    <span style="font-size:18px;">📅</span>
+                    <span class="meeting-title">Meeting Scheduled</span>
+                    <span class="text-muted text-sm ml-auto">{{ c['created_at'][:16] }}</span>
+                  </div>
+                  {% for line in c['comment'].split('\n') %}
+                    {% if 'Join link:' in line %}
+                      <a href="{{ line.replace('Join link: ','').strip() }}" target="_blank" class="join-btn">🔗 Join Meeting</a>
+                    {% else %}
+                      <div style="font-size:13px;color:var(--text2);margin-bottom:4px;">{{ line }}</div>
+                    {% endif %}
+                  {% endfor %}
+                </div>
+                {% else %}
+                <div class="comment-box">
+                  <div class="comment-head">
+                    <span class="comment-author">{{ c['full_name'] }}</span>
+                    {% if c['role'] in ('admin','agent') %}<span class="comment-role">SUPPORT</span>{% endif %}
+                    <span class="comment-time">{{ c['created_at'][:16] }}</span>
+                  </div>
+                  <div class="comment-text">{{ c['comment'] }}</div>
+                </div>
+                {% endif %}
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+          {% else %}
+          <p class="text-muted text-sm mb-4">No messages yet. Our team will respond shortly.</p>
+          {% endif %}
+
+          {% if ticket['status'] not in ('Resolved','Closed') %}
+          <hr class="div">
+          <form method="POST" action="/portal/ticket/{{ ticket['id'] }}/reply">
+            <div class="form-group">
+              <label class="form-label">Add Reply</label>
+              <textarea name="comment" class="form-control" rows="3" placeholder="Write your message..." required></textarea>
+            </div>
+            <div style="display:flex;justify-content:flex-end;">
+              <button type="submit" class="btn btn-primary">Send Reply →</button>
+            </div>
+          </form>
+          {% else %}
+          <div style="padding:12px;background:var(--green-bg);border:1px solid var(--green-border);border-radius:var(--radius);text-align:center;color:var(--green);font-size:13px;">
+            This ticket is {{ ticket['status'] }}. No further replies needed.
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Right panel -->
+    <div class="detail-panel">
+      {% if ticket['meeting_link'] %}
+      <div class="meeting-card">
+        <div class="meeting-header"><span style="font-size:16px;">📅</span><span class="meeting-title">Scheduled Meeting</span></div>
+        <a href="{{ ticket['meeting_link'] }}" target="_blank" class="join-btn w-full justify-center">🔗 Join Meeting</a>
+      </div>
+      {% endif %}
+      <div class="meta-row"><div class="meta-lbl">Status</div>
+        <div class="meta-val">
+          {% set s=ticket['status'] %}
+          {% if s=='Open' %}<span class="badge badge-open"><span class="badge-dot"></span>Open</span>
+          {% elif s=='In Progress' %}<span class="badge badge-inprog"><span class="badge-dot"></span>In Progress</span>
+          {% elif s=='Resolved' %}<span class="badge badge-resolved"><span class="badge-dot"></span>Resolved</span>
+          {% else %}<span class="badge badge-closed"><span class="badge-dot"></span>{{ s }}</span>{% endif %}
+        </div>
+      </div>
+      <div class="meta-row"><div class="meta-lbl">Assigned To</div><div class="meta-val">{{ ticket['assigned_to'] or 'Unassigned' }}</div></div>
+      <div class="meta-row"><div class="meta-lbl">Service</div><div class="meta-val">{{ ticket['service_type'] }}</div></div>
+      <div class="meta-row"><div class="meta-lbl">Priority</div><div class="meta-val"><span class="prio prio-{{ ticket['priority']|lower }}">{{ ticket['priority'] }}</span></div></div>
+      {% if ticket['project_name'] %}<div class="meta-row"><div class="meta-lbl">Project</div><div class="meta-val">{{ ticket['project_name'] }}</div></div>{% endif %}
+      {% if ticket['server_details'] %}<div class="meta-row"><div class="meta-lbl">Server</div><div class="meta-val"><code class="mono">{{ ticket['server_details'] }}</code></div></div>{% endif %}
+      {% if ticket['due_date'] %}<div class="meta-row"><div class="meta-lbl">Due Date</div><div class="meta-val">{{ ticket['due_date'] }}</div></div>{% endif %}
+      <div class="meta-row"><div class="meta-lbl">Created</div><div class="meta-val text-sm">{{ ticket['created_at'][:16] }}</div></div>
+    </div>
+  </div>
+</div>
+<script>document.querySelectorAll('.avatar-dyn').forEach(function(el){el.style.background=el.getAttribute('data-color');});</script>
+{% endblock %}

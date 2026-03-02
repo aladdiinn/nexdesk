@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% block title %}My Tickets{% endblock %}
+{% block content %}
+<div class="topbar">
+  <span class="topbar-title">My Support Tickets</span>
+  <div class="spacer"></div>
+  <a href="/portal/raise" class="btn btn-primary btn-sm">+ Raise Ticket</a>
+</div>
+<div class="page">
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-card-top">
+        <div>
+          <div class="stat-label">Open</div>
+          <div class="stat-value">{{ stats.open }}</div>
+        </div>
+        <div class="stat-icon-wrap" style="background:#fffbeb;">🟡</div>
+      </div>
+      <div class="stat-sub">Awaiting response</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card-top">
+        <div>
+          <div class="stat-label">In Progress</div>
+          <div class="stat-value">{{ stats.in_progress }}</div>
+        </div>
+        <div class="stat-icon-wrap" style="background:var(--blue-light);">🔵</div>
+      </div>
+      <div class="stat-sub">Being worked on</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card-top">
+        <div>
+          <div class="stat-label">Resolved</div>
+          <div class="stat-value">{{ stats.resolved }}</div>
+        </div>
+        <div class="stat-icon-wrap" style="background:var(--green-bg);">✅</div>
+      </div>
+      <div class="stat-sub">Completed</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card-top">
+        <div>
+          <div class="stat-label">Total</div>
+          <div class="stat-value">{{ stats.total }}</div>
+        </div>
+        <div class="stat-icon-wrap" style="background:var(--bg);">📋</div>
+      </div>
+      <div class="stat-sub">All time</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">All My Tickets</span>
+      <div class="ml-auto">
+        <a href="/portal/raise" class="btn btn-white btn-sm">+ New Ticket</a>
+      </div>
+    </div>
+    {% if tickets %}
+    <div class="table-wrap">
+    <table>
+      <thead><tr>
+        <th>Ticket #</th><th>Service</th><th>Project</th>
+        <th>Priority</th><th>Status</th><th>Assigned To</th><th>Created</th><th></th>
+      </tr></thead>
+      <tbody>
+        {% for t in tickets %}
+        <tr>
+          <td><span class="tkt-num">{{ t['ticket_number'] }}</span></td>
+          <td>{{ t['service_type'] }}</td>
+          <td>{{ t['project_name'] or '—' }}</td>
+          <td><span class="prio prio-{{ t['priority']|lower }}">{{ t['priority'] }}</span></td>
+          <td>
+            {% set s = t['status'] %}
+            {% if s=='Open' %}<span class="badge badge-open"><span class="badge-dot"></span>Open</span>
+            {% elif s=='In Progress' %}<span class="badge badge-inprog"><span class="badge-dot"></span>In Progress</span>
+            {% elif s=='Resolved' %}<span class="badge badge-resolved"><span class="badge-dot"></span>Resolved</span>
+            {% elif s=='Pending' %}<span class="badge badge-pending"><span class="badge-dot"></span>Pending</span>
+            {% else %}<span class="badge badge-closed"><span class="badge-dot"></span>{{ s }}</span>{% endif %}
+          </td>
+          <td class="text-muted text-sm">{{ t['assigned_to'] or '—' }}</td>
+          <td class="text-muted text-sm">{{ t['created_at'][:16] }}</td>
+          <td><a href="/portal/ticket/{{ t['id'] }}" class="btn btn-white btn-xs">View →</a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+    {% else %}
+    <div class="empty">
+      <div class="empty-icon">🎫</div>
+      <p>No tickets raised yet.</p>
+      <a href="/portal/raise" class="btn btn-primary">Raise Your First Ticket</a>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

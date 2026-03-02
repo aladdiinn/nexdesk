@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Add User{% endblock %}
+{% block content %}
+<div class="topbar">
+  <div class="topbar-breadcrumb"><a href="/admin/users">Users</a> › Add New User</div>
+</div>
+<div class="page">
+  <div style="max-width:600px;">
+    <div class="card">
+      <div class="card-header"><span class="card-title">Add New User</span></div>
+      <div class="card-body">
+        {% if error %}<div class="alert alert-error">{{ error }}</div>{% endif %}
+        <form method="POST" action="/admin/users/add">
+          <div class="form-grid2">
+            <div class="form-group">
+              <label class="form-label">Full Name *</label>
+              <input type="text" name="full_name" class="form-control" placeholder="Jane Doe" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Username *</label>
+              <input type="text" name="username" class="form-control" placeholder="janedoe" required>
+            </div>
+          </div>
+          <div class="form-grid2">
+            <div class="form-group">
+              <label class="form-label">Email</label>
+              <input type="email" name="email" class="form-control" placeholder="jane@company.com">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Password *</label>
+              <input type="text" name="password" class="form-control" placeholder="Set a password" required>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Role *</label>
+            <select name="role" class="form-control" required>
+              <option value="app">App User (Customer — can raise tickets)</option>
+              <option value="agent">Agent (Support — handles tickets)</option>
+              <option value="admin">Admin (Full access)</option>
+            </select>
+          </div>
+          <div style="display:flex;gap:8px;justify-content:flex-end;">
+            <a href="/admin/users" class="btn btn-white">Cancel</a>
+            <button type="submit" class="btn btn-primary">Create User →</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

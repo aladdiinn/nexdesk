@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}NexDesk{% endblock %}</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --blue:#2563eb;--blue2:#1d4ed8;--blue-light:#eff6ff;--blue-mid:#dbeafe;
+  --text:#1e293b;--text2:#475569;--text3:#94a3b8;--text4:#cbd5e1;
+  --bg:#f1f5f9;--white:#ffffff;--border:#e2e8f0;--border2:#cbd5e1;
+  --green:#059669;--green-bg:#ecfdf5;--green-border:#a7f3d0;
+  --yellow:#b45309;--yellow-bg:#fffbeb;--yellow-border:#fde68a;
+  --red:#dc2626;--red-bg:#fef2f2;--red-border:#fecaca;
+  --orange:#c2410c;--orange-bg:#fff7ed;--orange-border:#fed7aa;
+  --purple:#6d28d9;--purple-bg:#f5f3ff;
+  --sidebar1:56px;--sidebar2:230px;
+  --radius:6px;--shadow:0 1px 3px rgba(0,0,0,.08),0 1px 2px rgba(0,0,0,.04);
+  --shadow-md:0 4px 6px -1px rgba(0,0,0,.07),0 2px 4px -1px rgba(0,0,0,.05);
+}
+body{font-family:'Inter',sans-serif;font-size:13.5px;color:var(--text);background:var(--bg);min-height:100vh;}
+a{text-decoration:none;color:inherit;}
+
+/* ===== LAYOUT ===== */
+.app{display:flex;min-height:100vh;}
+
+/* ===== ICON SIDEBAR (leftmost strip like BoldDesk) ===== */
+.sidebar1{
+  width:var(--sidebar1);background:var(--blue2);
+  display:flex;flex-direction:column;align-items:center;
+  position:fixed;top:0;left:0;height:100vh;z-index:200;
+  padding:12px 0;gap:4px;
+}
+.s1-logo{width:34px;height:34px;background:white;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;margin-bottom:12px;}
+.s1-link{width:40px;height:40px;border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;color:rgba(255,255,255,0.65);font-size:18px;transition:.15s;cursor:pointer;gap:2px;position:relative;}
+.s1-link:hover,.s1-link.active{background:rgba(255,255,255,0.15);color:white;}
+.s1-label{font-size:9px;font-weight:500;letter-spacing:.2px;}
+.s1-bottom{margin-top:auto;display:flex;flex-direction:column;align-items:center;gap:6px;}
+.s1-avatar{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:white;cursor:pointer;}
+
+/* ===== SECONDARY SIDEBAR ===== */
+.sidebar2{
+  width:var(--sidebar2);background:var(--white);border-right:1px solid var(--border);
+  position:fixed;top:0;left:var(--sidebar1);height:100vh;z-index:150;
+  display:flex;flex-direction:column;overflow:hidden;
+}
+.s2-header{padding:14px 16px;border-bottom:1px solid var(--border);font-size:14px;font-weight:700;color:var(--text);flex-shrink:0;}
+.s2-search{padding:10px 12px;border-bottom:1px solid var(--border);flex-shrink:0;}
+.s2-search input{width:100%;padding:6px 10px;border:1px solid var(--border2);border-radius:var(--radius);font-size:12.5px;color:var(--text);outline:none;font-family:inherit;}
+.s2-search input:focus{border-color:var(--blue);}
+.s2-body{flex:1;overflow-y:auto;padding:8px 0;}
+.s2-section{padding:8px 16px 4px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text3);}
+.s2-link{display:flex;align-items:center;gap:8px;padding:7px 16px;color:var(--text2);font-size:13px;font-weight:500;transition:.12s;cursor:pointer;}
+.s2-link:hover{background:var(--bg);color:var(--text);}
+.s2-link.active{background:var(--blue-light);color:var(--blue);font-weight:600;}
+.s2-link .s2-icon{font-size:14px;width:18px;text-align:center;}
+.s2-link .s2-badge{margin-left:auto;background:var(--blue);color:white;font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;}
+.s2-link .arrow{margin-left:auto;font-size:10px;color:var(--text3);}
+.s2-sub{padding-left:40px;}
+.s2-sub .s2-link{font-size:12.5px;padding:6px 16px 6px 0;}
+
+/* ===== MAIN CONTENT ===== */
+.main{margin-left:calc(var(--sidebar1) + var(--sidebar2));flex:1;display:flex;flex-direction:column;min-height:100vh;}
+
+/* No sidebar variant (login page) */
+.main-full{flex:1;display:flex;flex-direction:column;min-height:100vh;}
+
+/* ===== TOPBAR ===== */
+.topbar{height:52px;background:var(--white);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;gap:12px;position:sticky;top:0;z-index:100;}
+.topbar-title{font-size:15px;font-weight:700;color:var(--text);}
+.topbar-breadcrumb{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--text3);}
+.topbar-breadcrumb a{color:var(--text2);}
+.topbar-breadcrumb a:hover{color:var(--blue);}
+.spacer{flex:1;}
+.topbar-actions{display:flex;align-items:center;gap:8px;}
+
+/* ===== PAGE ===== */
+.page{padding:24px;}
+.page-header{margin-bottom:20px;}
+.page-title{font-size:17px;font-weight:700;color:var(--text);}
+.page-sub{font-size:13px;color:var(--text3);margin-top:3px;}
+
+/* ===== CARDS ===== */
+.card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);}
+.card-body{padding:20px;}
+.card-header{padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;}
+.card-title{font-size:13.5px;font-weight:700;color:var(--text);}
+
+/* ===== STAT CARDS ===== */
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px;}
+.stat-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px;box-shadow:var(--shadow);position:relative;overflow:hidden;}
+.stat-card-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px;}
+.stat-icon-wrap{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:17px;}
+.stat-label{font-size:11.5px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;}
+.stat-value{font-size:26px;font-weight:800;color:var(--text);letter-spacing:-1px;line-height:1;}
+.stat-sub{font-size:11.5px;color:var(--text3);margin-top:4px;}
+
+/* ===== TABLE ===== */
+.table-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;}
+thead th{text-align:left;font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--text3);padding:10px 16px;border-bottom:1px solid var(--border);white-space:nowrap;background:var(--bg);}
+tbody td{padding:11px 16px;border-bottom:1px solid var(--border);font-size:13.5px;color:var(--text);vertical-align:middle;}
+tbody tr:last-child td{border-bottom:none;}
+tbody tr:hover{background:#fafbfc;}
+
+/* ===== BADGES ===== */
+.badge{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:20px;font-size:11.5px;font-weight:600;white-space:nowrap;}
+.badge-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+.badge-open{background:var(--yellow-bg);color:var(--yellow);border:1px solid var(--yellow-border);}
+.badge-open .badge-dot{background:var(--yellow);}
+.badge-inprog{background:var(--blue-light);color:var(--blue);border:1px solid var(--blue-mid);}
+.badge-inprog .badge-dot{background:var(--blue);}
+.badge-resolved{background:var(--green-bg);color:var(--green);border:1px solid var(--green-border);}
+.badge-resolved .badge-dot{background:var(--green);}
+.badge-closed{background:var(--bg);color:var(--text3);border:1px solid var(--border);}
+.badge-closed .badge-dot{background:var(--text3);}
+.badge-pending{background:var(--purple-bg);color:var(--purple);border:1px solid #ddd6fe;}
+.badge-pending .badge-dot{background:var(--purple);}
+
+/* Priority pills */
+.prio{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11.5px;font-weight:700;}
+.prio-critical{background:var(--red-bg);color:var(--red);border:1px solid var(--red-border);}
+.prio-high{background:var(--orange-bg);color:var(--orange);border:1px solid var(--orange-border);}
+.prio-medium{background:var(--yellow-bg);color:var(--yellow);border:1px solid var(--yellow-border);}
+.prio-low{background:var(--green-bg);color:var(--green);border:1px solid var(--green-border);}
+
+/* Role pills */
+.role-admin{background:var(--red-bg);color:var(--red);padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700;}
+.role-agent{background:var(--green-bg);color:var(--green);padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700;}
+.role-app{background:var(--blue-light);color:var(--blue);padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700;}
+
+/* ===== BUTTONS ===== */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:var(--radius);font-size:13px;font-weight:600;cursor:pointer;border:none;font-family:inherit;transition:.15s;white-space:nowrap;}
+.btn-primary{background:var(--blue);color:white;}
+.btn-primary:hover{background:var(--blue2);}
+.btn-white{background:white;color:var(--text2);border:1px solid var(--border2);}
+.btn-white:hover{background:var(--bg);color:var(--text);}
+.btn-danger{background:var(--red-bg);color:var(--red);border:1px solid var(--red-border);}
+.btn-danger:hover{background:#fee2e2;}
+.btn-success{background:var(--green-bg);color:var(--green);border:1px solid var(--green-border);}
+.btn-sm{padding:5px 10px;font-size:12px;}
+.btn-xs{padding:3px 8px;font-size:11.5px;}
+
+/* ===== FORMS ===== */
+.form-group{margin-bottom:16px;}
+.form-label{display:block;font-size:12px;font-weight:600;color:var(--text2);margin-bottom:5px;text-transform:uppercase;letter-spacing:.4px;}
+.form-control{width:100%;padding:8px 12px;border:1px solid var(--border2);border-radius:var(--radius);color:var(--text);font-family:inherit;font-size:13.5px;outline:none;background:white;transition:.15s;}
+.form-control:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(37,99,235,.1);}
+select.form-control option{background:white;}
+textarea.form-control{resize:vertical;min-height:90px;}
+.form-grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.form-grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;}
+.form-hint{font-size:11.5px;color:var(--text3);margin-top:4px;}
+
+/* ===== CHECKBOX ===== */
+.check-wrap{display:flex;align-items:center;gap:8px;cursor:pointer;}
+.check-wrap input{width:15px;height:15px;cursor:pointer;accent-color:var(--blue);}
+.check-wrap span{font-size:13px;color:var(--text2);}
+
+/* ===== AVATAR ===== */
+.avatar{border-radius:6px;display:flex;align-items:center;justify-content:center;font-weight:700;color:white;flex-shrink:0;}
+
+/* ===== TICKET NUMBER ===== */
+.tkt-num{font-family:'JetBrains Mono',monospace;font-size:12.5px;color:var(--blue);font-weight:600;}
+
+/* ===== COMMENT THREAD ===== */
+.thread{display:flex;flex-direction:column;gap:14px;}
+.thread-item{display:flex;gap:10px;}
+.comment-box{flex:1;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;}
+.comment-box.internal{background:#fffbeb;border-color:#fde68a;}
+.comment-box.meeting-msg{background:var(--blue-light);border-color:var(--blue-mid);}
+.comment-head{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
+.comment-author{font-size:12.5px;font-weight:700;color:var(--text);}
+.comment-time{font-size:11.5px;color:var(--text3);margin-left:auto;}
+.comment-role{font-size:10px;font-weight:700;background:var(--blue-light);color:var(--blue);padding:1px 6px;border-radius:3px;}
+.internal-tag{font-size:10px;font-weight:700;background:var(--yellow-bg);color:var(--yellow);padding:1px 6px;border-radius:3px;}
+.comment-text{font-size:13.5px;color:var(--text2);line-height:1.6;}
+
+/* ===== ACTIVITY TIMELINE ===== */
+.timeline{display:flex;flex-direction:column;}
+.tl-item{display:flex;gap:12px;padding:8px 0;position:relative;}
+.tl-item:not(:last-child)::after{content:'';position:absolute;left:13px;top:30px;bottom:-8px;width:1px;background:var(--border);}
+.tl-dot{width:26px;height:26px;border-radius:6px;background:var(--bg);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;}
+.tl-text{font-size:12.5px;color:var(--text2);padding-top:4px;}
+.tl-time{font-size:11px;color:var(--text3);margin-top:2px;}
+
+/* ===== DETAIL LAYOUT ===== */
+.detail-layout{display:grid;grid-template-columns:1fr 280px;gap:18px;}
+.detail-panel{display:flex;flex-direction:column;gap:14px;}
+.meta-row{display:flex;flex-direction:column;gap:2px;padding:12px 14px;background:var(--bg);border-radius:var(--radius);}
+.meta-lbl{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--text3);}
+.meta-val{font-size:13.5px;color:var(--text);font-weight:500;}
+
+/* ===== ADMIN CENTER GRID ===== */
+.admin-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+.admin-tile{background:white;border:1px solid var(--border);border-radius:var(--radius);padding:18px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:.15s;box-shadow:var(--shadow);}
+.admin-tile:hover{border-color:var(--blue);box-shadow:0 0 0 3px rgba(37,99,235,.08);}
+.admin-tile-icon{width:38px;height:38px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+.admin-tile-label{font-size:13px;font-weight:600;color:var(--text);}
+.admin-tile-sub{font-size:11.5px;color:var(--text3);margin-top:2px;}
+.admin-section-title{font-size:13px;font-weight:700;color:var(--blue);margin:20px 0 10px;text-transform:uppercase;letter-spacing:.5px;}
+
+/* ===== FILTER BAR ===== */
+.filter-bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:12px 16px;background:var(--bg);border-bottom:1px solid var(--border);}
+.filter-bar .form-control{width:auto;}
+.search-wrap{position:relative;flex:1;min-width:180px;}
+.search-wrap .search-ico{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:13px;}
+.search-wrap input{padding-left:30px;}
+
+/* ===== ALERTS ===== */
+.alert{padding:10px 14px;border-radius:var(--radius);margin-bottom:14px;font-size:13px;font-weight:500;}
+.alert-error{background:var(--red-bg);border:1px solid var(--red-border);color:var(--red);}
+.alert-success{background:var(--green-bg);border:1px solid var(--green-border);color:var(--green);}
+
+/* ===== EMPTY STATE ===== */
+.empty{text-align:center;padding:50px 20px;color:var(--text3);}
+.empty-icon{font-size:36px;margin-bottom:10px;}
+.empty p{font-size:13.5px;margin-bottom:14px;}
+
+/* ===== TAG ===== */
+.tag{display:inline-block;background:var(--blue-light);color:var(--blue);border:1px solid var(--blue-mid);padding:2px 8px;border-radius:4px;font-size:11.5px;font-weight:600;margin:2px;}
+
+/* ===== DIVIDER ===== */
+hr.div{border:none;border-top:1px solid var(--border);margin:16px 0;}
+
+/* ===== UTILS ===== */
+.flex{display:flex;}.items-center{align-items:center;}.gap-2{gap:8px;}.gap-3{gap:12px;}.ml-auto{margin-left:auto;}
+.mb-3{margin-bottom:12px;}.mb-4{margin-bottom:16px;}.mb-5{margin-bottom:20px;}.mt-3{margin-top:12px;}
+.text-muted{color:var(--text3);}.text-sm{font-size:12px;}.fw-600{font-weight:600;}
+.w-full{width:100%;}.justify-center{justify-content:center;}
+
+/* ===== MEETING CARD ===== */
+.meeting-card{background:var(--blue-light);border:1px solid var(--blue-mid);border-radius:var(--radius);padding:14px 16px;}
+.meeting-header{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
+.meeting-title{font-size:13.5px;font-weight:700;color:var(--blue);}
+.join-btn{display:inline-flex;align-items:center;gap:6px;background:var(--blue);color:white;padding:8px 16px;border-radius:var(--radius);font-size:13px;font-weight:600;text-decoration:none;}
+.join-btn:hover{background:var(--blue2);}
+
+/* ===== SCROLLBAR ===== */
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px;}
+
+/* ===== SECTION HEADER ===== */
+.section-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.section-hdr .title{font-size:14px;font-weight:700;}
+
+/* ===== STATUS INDICATOR ===== */
+.status-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:4px;}
+
+/* ===== TOOLTIP ===== */
+.tooltip{position:absolute;left:calc(100% + 8px);top:50%;transform:translateY(-50%);background:#1e293b;color:white;font-size:11px;padding:4px 8px;border-radius:4px;white-space:nowrap;pointer-events:none;opacity:0;transition:.15s;z-index:999;}
+.s1-link:hover .tooltip{opacity:1;}
+.s1-link{position:relative;}
+
+/* ===== DUE DATE COLORS ===== */
+.due-set{font-size:12px;color:var(--text2);}
+.due-empty{font-size:12px;color:var(--text3);}
+
+/* ===== CODE ===== */
+code.mono{font-family:'JetBrains Mono',monospace;font-size:12px;background:var(--bg);padding:2px 6px;border-radius:4px;color:var(--text);}
+</style>
+{% block extra_styles %}{% endblock %}
+</head>
+<body>
+<div class="app">
+
+{% if session.get('username') %}
+<!-- PRIMARY ICON SIDEBAR -->
+<nav class="sidebar1">
+  <div class="s1-logo">🎫</div>
+
+  {% if session.get('role') == 'app' %}
+  <a href="/portal/dashboard" class="s1-link {% if '/portal/dashboard' in request.path %}active{% endif %}">
+    <span>🏠</span><span class="s1-label">Home</span>
+    <span class="tooltip">Dashboard</span>
+  </a>
+  <a href="/portal/raise" class="s1-link {% if '/portal/raise' in request.path %}active{% endif %}">
+    <span>➕</span><span class="s1-label">New</span>
+    <span class="tooltip">Raise Ticket</span>
+  </a>
+
+  {% elif session.get('role') == 'admin' %}
+  <a href="/admin/dashboard" class="s1-link {% if request.path == '/admin/dashboard' %}active{% endif %}">
+    <span>🏠</span><span class="s1-label">Home</span>
+    <span class="tooltip">Dashboard</span>
+  </a>
+  <a href="/admin/tickets" class="s1-link {% if '/admin/tickets' in request.path %}active{% endif %}">
+    <span>🎫</span><span class="s1-label">Tickets</span>
+    <span class="tooltip">Tickets</span>
+  </a>
+  <a href="/admin/users" class="s1-link {% if '/admin/users' in request.path %}active{% endif %}">
+    <span>👥</span><span class="s1-label">Users</span>
+    <span class="tooltip">Users</span>
+  </a>
+  <a href="/admin/center" class="s1-link {% if '/admin/center' in request.path %}active{% endif %}">
+    <span>⚙️</span><span class="s1-label">Admin</span>
+    <span class="tooltip">Admin Center</span>
+  </a>
+
+  {% elif session.get('role') == 'agent' %}
+  <a href="/agent/dashboard" class="s1-link {% if request.path == '/agent/dashboard' %}active{% endif %}">
+    <span>🏠</span><span class="s1-label">Home</span>
+    <span class="tooltip">Dashboard</span>
+  </a>
+  <a href="/agent/tickets" class="s1-link {% if '/agent/tickets' in request.path %}active{% endif %}">
+    <span>🎫</span><span class="s1-label">Tickets</span>
+    <span class="tooltip">My Tickets</span>
+  </a>
+  {% endif %}
+
+  <div class="s1-bottom">
+    <a href="/logout" class="s1-link" title="Logout"><span>🚪</span><span class="s1-label">Exit</span></a>
+    <div class="s1-avatar" data-color="{{ session.get('avatar_color','#2563eb') }}" title="{{ session.get('full_name') }}">
+      {{ (session.get('full_name','U') or 'U')[0] }}
+    </div>
+  </div>
+</nav>
+
+<!-- SECONDARY SIDEBAR -->
+<nav class="sidebar2">
+  {% if session.get('role') == 'app' %}
+  <div class="s2-header">My Support</div>
+  <div class="s2-body">
+    <div class="s2-section">Workspace</div>
+    <a href="/portal/dashboard" class="s2-link {% if request.path == '/portal/dashboard' %}active{% endif %}">
+      <span class="s2-icon">📊</span> Dashboard
+    </a>
+    <a href="/portal/raise" class="s2-link {% if request.path == '/portal/raise' %}active{% endif %}">
+      <span class="s2-icon">➕</span> Raise Ticket
+    </a>
+    <div class="s2-section">My Tickets</div>
+    <a href="/portal/tickets/open" class="s2-link {% if 'open' in request.path %}active{% endif %}">
+      <span class="s2-icon">🟡</span> Open
+    </a>
+    <a href="/portal/tickets/inprogress" class="s2-link">
+      <span class="s2-icon">🔵</span> In Progress
+    </a>
+    <a href="/portal/tickets/resolved" class="s2-link">
+      <span class="s2-icon">✅</span> Resolved
+    </a>
+  </div>
+
+  {% elif session.get('role') == 'admin' %}
+  <div class="s2-header">Admin Center</div>
+  <div class="s2-search">
+    <input type="text" placeholder="Search..." id="sidebarSearch" onkeyup="filterSidebar(this.value)">
+  </div>
+  <div class="s2-body" id="sidebarBody">
+    <div class="s2-section">Manage</div>
+    <a href="/admin/dashboard" class="s2-link {% if request.path == '/admin/dashboard' %}active{% endif %}">
+      <span class="s2-icon">📊</span> Dashboard
+    </a>
+    <a href="/admin/tickets" class="s2-link {% if request.path == '/admin/tickets' %}active{% endif %}">
+      <span class="s2-icon">🎫</span> All Tickets
+    </a>
+    <a href="/admin/tickets?status=Open" class="s2-link s2-sub">
+      <span class="s2-icon">🟡</span> Open Tickets
+    </a>
+    <a href="/admin/tickets?status=In+Progress" class="s2-link s2-sub">
+      <span class="s2-icon">🔵</span> In Progress
+    </a>
+    <a href="/admin/tickets?status=Resolved" class="s2-link s2-sub">
+      <span class="s2-icon">✅</span> Resolved
+    </a>
+
+    <div class="s2-section">Users & Permissions</div>
+    <a href="/admin/users" class="s2-link {% if request.path == '/admin/users' %}active{% endif %}">
+      <span class="s2-icon">👥</span> All Users
+    </a>
+    <a href="/admin/users?role=agent" class="s2-link s2-sub">
+      <span class="s2-icon">🎯</span> Agents
+    </a>
+    <a href="/admin/users?role=app" class="s2-link s2-sub">
+      <span class="s2-icon">👤</span> App Users
+    </a>
+    <a href="/admin/users/add" class="s2-link {% if '/admin/users/add' in request.path %}active{% endif %}">
+      <span class="s2-icon">➕</span> Add User
+    </a>
+
+    <div class="s2-section">Automation</div>
+    <a href="/admin/center#automation" class="s2-link">
+      <span class="s2-icon">⚡</span> Auto Assign
+    </a>
+    <a href="/admin/center#sla" class="s2-link">
+      <span class="s2-icon">⏱️</span> SLA Policies
+    </a>
+
+    <div class="s2-section">Settings</div>
+    <a href="/admin/center" class="s2-link {% if request.path == '/admin/center' %}active{% endif %}">
+      <span class="s2-icon">⚙️</span> Admin Center
+    </a>
+    <a href="/admin/email/debug" class="s2-link {% if 'email' in request.path %}active{% endif %}">
+      <span class="s2-icon">📧</span> Email Debug
+    </a>
+  </div>
+
+  {% elif session.get('role') == 'agent' %}
+  <div class="s2-header">Agent Portal</div>
+  <div class="s2-body">
+    <div class="s2-section">Queue</div>
+    <a href="/agent/dashboard" class="s2-link {% if request.path == '/agent/dashboard' %}active{% endif %}">
+      <span class="s2-icon">📊</span> My Dashboard
+    </a>
+    <a href="/agent/tickets" class="s2-link {% if request.path == '/agent/tickets' %}active{% endif %}">
+      <span class="s2-icon">🎫</span> My Tickets
+    </a>
+    <a href="/agent/tickets?status=Open" class="s2-link s2-sub">
+      <span class="s2-icon">🟡</span> Open
+    </a>
+    <a href="/agent/tickets?status=In+Progress" class="s2-link s2-sub">
+      <span class="s2-icon">🔵</span> In Progress
+    </a>
+  </div>
+  {% endif %}
+</nav>
+{% endif %}
+
+<!-- MAIN -->
+<div class="{% if session.get('username') %}main{% else %}main-full{% endif %}">
+  {% block content %}{% endblock %}
+</div>
+
+</div>
+
+<script>
+// Apply avatar background colors via JS to avoid Jinja in style attrs
+document.querySelectorAll('[data-color]').forEach(function(el){
+  el.style.background = el.getAttribute('data-color');
+});
+
+function filterSidebar(val){
+  val = val.toLowerCase();
+  document.querySelectorAll('.s2-link').forEach(function(el){
+    el.style.display = el.textContent.toLowerCase().includes(val) ? '' : 'none';
+  });
+}
+</script>
+{% block extra_scripts %}{% endblock %}
+</body>
+</html>

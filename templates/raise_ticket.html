@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block title %}Raise Ticket{% endblock %}
+{% block content %}
+<div class="topbar">
+  <div class="topbar-breadcrumb">
+    <a href="/portal/dashboard">Dashboard</a> › New Ticket
+  </div>
+</div>
+<div class="page">
+  <div style="max-width:680px;">
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Raise a Support Ticket</span>
+      </div>
+      <div class="card-body">
+        <form method="POST">
+          <div class="form-grid2">
+            <div class="form-group">
+              <label class="form-label">Service Type *</label>
+              <select name="service_type" class="form-control" required>
+                <option value="">— Select —</option>
+                <option>DB Request</option><option>Server Access</option>
+                <option>Deployment</option><option>Bug Fix</option>
+                <option>Feature Request</option><option>Network Issue</option><option>Other</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Priority</label>
+              <select name="priority" class="form-control">
+                <option value="Low">Low</option>
+                <option value="Medium" selected>Medium</option>
+                <option value="High">High</option>
+                <option value="Critical">Critical</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-grid2">
+            <div class="form-group">
+              <label class="form-label">Category</label>
+              <select name="category" class="form-control">
+                <option>General</option><option>Infrastructure</option>
+                <option>Application</option><option>Security</option><option>Data</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Due Date</label>
+              <input type="date" name="due_date" class="form-control">
+            </div>
+          </div>
+          <div class="form-grid2">
+            <div class="form-group">
+              <label class="form-label">Project Name</label>
+              <input type="text" name="project_name" class="form-control" placeholder="e.g. CRM Portal">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Server / Environment</label>
+              <input type="text" name="server_details" class="form-control" placeholder="e.g. prod-server-01">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Description *</label>
+            <textarea name="description" class="form-control" rows="5" placeholder="Describe the issue in detail..." required></textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Tags</label>
+            <input type="text" name="tags" class="form-control" placeholder="e.g. urgent, prod, backend (comma separated)">
+          </div>
+          <div class="flex gap-2" style="justify-content:flex-end;">
+            <a href="/portal/dashboard" class="btn btn-white">Cancel</a>
+            <button type="submit" class="btn btn-primary">Submit Ticket →</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

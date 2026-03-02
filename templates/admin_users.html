@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% block title %}User Management{% endblock %}
+{% block content %}
+<div class="topbar">
+  <span class="topbar-title">Users & Permissions</span>
+  <div class="spacer"></div>
+  <a href="/admin/users/add" class="btn btn-primary btn-sm">+ Add User</a>
+</div>
+<div class="page">
+
+  <!-- Filter tabs -->
+  <div style="display:flex;gap:6px;margin-bottom:16px;">
+    <a href="/admin/users" class="btn {% if not filter_role %}btn-primary{% else %}btn-white{% endif %} btn-sm">All ({{ users|length }})</a>
+    <a href="/admin/users?role=admin" class="btn {% if filter_role=='admin' %}btn-primary{% else %}btn-white{% endif %} btn-sm">Admins</a>
+    <a href="/admin/users?role=agent" class="btn {% if filter_role=='agent' %}btn-primary{% else %}btn-white{% endif %} btn-sm">Agents</a>
+    <a href="/admin/users?role=app" class="btn {% if filter_role=='app' %}btn-primary{% else %}btn-white{% endif %} btn-sm">App Users</a>
+  </div>
+
+  {% if message %}
+  <div class="alert alert-success">{{ message }}</div>
+  {% endif %}
+
+  <div class="card" style="padding:0;">
+    <div class="card-header">
+      <span class="card-title">All Users</span>
+      <span class="text-muted text-sm ml-auto">{{ users|length }} users</span>
+    </div>
+    <div class="table-wrap">
+    <table>
+      <thead><tr>
+        <th>User</th><th>Username</th><th>Email</th><th>Role</th>
+        <th>Status</th><th>Joined</th><th>Change Role</th><th>Reset Password</th><th>Actions</th>
+      </tr></thead>
+      <tbody>
+        {% for u in users %}
+        <tr>
+          <td>
+            <div class="flex items-center gap-2">
+              <div class="avatar" data-color="{{ u['avatar_color'] }}" style="width:32px;height:32px;font-size:12px;border-radius:6px;">
+                {{ (u['full_name'] or u['username'])[0]|upper }}
+              </div>
+              <div>
+                <div class="fw-600">{{ u['full_name'] or '—' }}</div>
+              </div>
+            </div>
+          </td>
+          <td><code class="mono">{{ u['username'] }}</code></td>
+          <td class="text-muted text-sm">{{ u['email'] or '—' }}</td>
+          <td>
+            {% if u['role']=='admin' %}<span class="role-admin">ADMIN</span>
+            {% elif u['role']=='agent' %}<span class="role-agent">AGENT</span>
+            {% else %}<span class="role-app">USER</span>{% endif %}
+          </td>
+          <td>
+            {% if u['is_active'] %}
+            <span class="badge badge-resolved"><span class="badge-dot"></span>Active</span>
+            {% else %}
+            <span class="badge badge-closed"><span class="badge-dot"></span>Inactive</span>
+            {% endif %}
+          </td>
+          <td class="text-muted text-sm">{{ u['created_at'][:10] if u['created_at'] else '—' }}</td>
+          <td>
+            {% if u['username'] != session.username %}
+            <form method="POST" action="/admin/users/{{ u['id'] }}/role" style="display:flex;gap:6px;">
+              <select name="role" class="form-control" style="width:auto;padding:4px 8px;font-size:12px;">
+                <option value="app" {% if u['role']=='app' %}selected{% endif %}>User</option>
+                <option value="agent" {% if u['role']=='agent' %}selected{% endif %}>Agent</option>
+                <option value="admin" {% if u['role']=='admin' %}selected{% endif %}>Admin</option>
+              </select>
+              <button class="btn btn-white btn-xs">Set</button>
+            </form>
+            {% else %}<span class="text-muted text-sm">You</span>{% endif %}
+          </td>
+          <td>
+            {% if u['username'] != session.username %}
+            <form method="POST" action="/admin/users/{{ u['id'] }}/reset_password" style="display:flex;gap:6px;">
+              <input type="text" name="new_password" class="form-control" placeholder="New password" style="width:130px;padding:4px 8px;font-size:12px;">
+              <button class="btn btn-white btn-xs">Reset</button>
+            </form>
+            {% else %}<span class="text-muted text-sm">—</span>{% endif %}
+          </td>
+          <td>
+            {% if u['username'] != session.username %}
+            <form method="POST" action="/admin/users/{{ u['id'] }}/toggle">
+              <button class="btn btn-xs {% if u['is_active'] %}btn-danger{% else %}btn-success{% endif %}">
+                {% if u['is_active'] %}Disable{% else %}Enable{% endif %}
+              </button>
+            </form>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  </div>
+</div>
+<script>document.querySelectorAll('[data-color]').forEach(function(el){el.style.background=el.getAttribute('data-color');});</script>
+{% endblock %}

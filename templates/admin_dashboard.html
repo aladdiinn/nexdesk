@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+{% block title %}Admin Dashboard{% endblock %}
+{% block content %}
+<div class="topbar">
+  <span class="topbar-title">Dashboard</span>
+  <div class="spacer"></div>
+  <a href="/admin/email/simulate" style="display:none" id="simLink"></a>
+  <button onclick="document.getElementById('simModal').style.display='flex'" class="btn btn-white btn-sm">📧 Simulate Email Ticket</button>
+  <a href="/admin/tickets" class="btn btn-white btn-sm">View All</a>
+</div>
+
+<div class="page">
+  <!-- Stats -->
+  <div class="stats-row" style="grid-template-columns:repeat(5,1fr);">
+    <div class="stat-card"><div class="stat-card-top"><div><div class="stat-label">Total</div><div class="stat-value">{{ stats.total }}</div></div><div class="stat-icon-wrap" style="background:#f1f5f9;">📋</div></div><div class="stat-sub">All tickets</div></div>
+    <div class="stat-card"><div class="stat-card-top"><div><div class="stat-label">Open</div><div class="stat-value">{{ stats.open }}</div></div><div class="stat-icon-wrap" style="background:#fffbeb;">🟡</div></div><div class="stat-sub">Needs action</div></div>
+    <div class="stat-card"><div class="stat-card-top"><div><div class="stat-label">In Progress</div><div class="stat-value">{{ stats.in_progress }}</div></div><div class="stat-icon-wrap" style="background:#eff6ff;">🔵</div></div><div class="stat-sub">Being handled</div></div>
+    <div class="stat-card"><div class="stat-card-top"><div><div class="stat-label">From Email</div><div class="stat-value">{{ stats.email }}</div></div><div class="stat-icon-wrap" style="background:#f0fdf4;">📧</div></div><div class="stat-sub">Email source</div></div>
+    <div class="stat-card"><div class="stat-card-top"><div><div class="stat-label">Resolved</div><div class="stat-value">{{ stats.resolved }}</div></div><div class="stat-icon-wrap" style="background:#ecfdf5;">✅</div></div><div class="stat-sub">Completed</div></div>
+  </div>
+
+  <!-- Filter + Table -->
+  <div class="card" style="padding:0;">
+    <div class="filter-bar">
+      <form method="GET" action="/admin/tickets" style="display:flex;gap:8px;align-items:center;flex:1;flex-wrap:wrap;">
+        <div class="search-wrap">
+          <span class="search-ico">🔍</span>
+          <input type="text" name="search" class="form-control" placeholder="Search ticket, email, subject..." value="{{ search or '' }}">
+        </div>
+        <select name="status" class="form-control" onchange="this.form.submit()">
+          <option value="">All Statuses</option>
+          <option value="Open" {% if filter_status=='Open' %}selected{% endif %}>Open</option>
+          <option value="In Progress" {% if filter_status=='In Progress' %}selected{% endif %}>In Progress</option>
+          <option value="Pending" {% if filter_status=='Pending' %}selected{% endif %}>Pending</option>
+          <option value="Resolved" {% if filter_status=='Resolved' %}selected{% endif %}>Resolved</option>
+          <option value="Closed" {% if filter_status=='Closed' %}selected{% endif %}>Closed</option>
+        </select>
+        <select name="priority" class="form-control" onchange="this.form.submit()">
+          <option value="">All Priorities</option>
+          <option value="Critical" {% if filter_priority=='Critical' %}selected{% endif %}>Critical</option>
+          <option value="High" {% if filter_priority=='High' %}selected{% endif %}>High</option>
+          <option value="Medium" {% if filter_priority=='Medium' %}selected{% endif %}>Medium</option>
+          <option value="Low" {% if filter_priority=='Low' %}selected{% endif %}>Low</option>
+        </select>
+        <select name="assigned" class="form-control" onchange="this.form.submit()">
+          <option value="">All Agents</option>
+          {% for a in agents %}
+          <option value="{{ a['username'] }}" {% if filter_assigned==a['username'] %}selected{% endif %}>{{ a['full_name'] }}</option>
+          {% endfor %}
+        </select>
+        <button type="submit" class="btn btn-primary btn-sm">Filter</button>
+        {% if filter_status or filter_priority or filter_assigned or search %}
+        <a href="/admin/dashboard" class="btn btn-white btn-sm">✕ Clear</a>
+        {% endif %}
+      </form>
+    </div>
+
+    <div class="card-header" style="border-top:1px solid var(--border);">
+      <span class="card-title">All Tickets</span>
+      <span class="text-muted text-sm ml-auto">{{ tickets|length }} results</span>
+    </div>
+
+    {% if tickets %}
+    <div class="table-wrap">
+    <table>
+      <thead><tr>
+        <th>Ticket #</th><th>Source</th><th>Requester</th><th>Subject / Service</th>
+        <th>Priority</th><th>Status</th><th>Assigned</th><th>Due</th><th>Updated</th><th></th>
+      </tr></thead>
+      <tbody>
+        {% for t in tickets %}
+        <tr>
+          <td><span class="tkt-num">{{ t['ticket_number'] }}</span></td>
+          <td>
+            {% if t['source']=='email' %}
+            <span style="background:#f0fdf4;color:#059669;border:1px solid #a7f3d0;padding:2px 7px;border-radius:4px;font-size:11px;font-weight:700;">📧 EMAIL</span>
+            {% else %}
+            <span style="background:#eff6ff;color:#2563eb;border:1px solid #dbeafe;padding:2px 7px;border-radius:4px;font-size:11px;font-weight:700;">🌐 WEB</span>
+            {% endif %}
+          </td>
+          <td>
+            <div class="fw-600" style="font-size:13px;">{{ t['req_name'] or '—' }}</div>
+            <div class="text-muted text-sm">{{ t['req_email'] or '' }}</div>
+          </td>
+          <td>
+            <div style="font-size:13px;color:var(--text);">{{ t['subject'] or t['service_type'] }}</div>
+            <div class="text-muted text-sm">{{ t['category'] }}</div>
+          </td>
+          <td><span class="prio prio-{{ t['priority']|lower }}">{{ t['priority'] }}</span></td>
+          <td>
+            {% set s=t['status'] %}
+            {% if s=='Open' %}<span class="badge badge-open"><span class="badge-dot"></span>Open</span>
+            {% elif s=='In Progress' %}<span class="badge badge-inprog"><span class="badge-dot"></span>In Progress</span>
+            {% elif s=='Resolved' %}<span class="badge badge-resolved"><span class="badge-dot"></span>Resolved</span>
+            {% elif s=='Pending' %}<span class="badge badge-pending"><span class="badge-dot"></span>Pending</span>
+            {% else %}<span class="badge badge-closed"><span class="badge-dot"></span>{{ s }}</span>{% endif %}
+          </td>
+          <td class="text-sm">{{ t['assigned_to'] or '—' }}</td>
+          <td class="{% if t['due_date'] %}due-set{% else %}due-empty{% endif %}">{{ t['due_date'] or '—' }}</td>
+          <td class="text-muted text-sm">{{ t['updated_at'][:10] }}</td>
+          <td><a href="/admin/ticket/{{ t['id'] }}" class="btn btn-white btn-xs">Manage →</a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+    {% else %}
+    <div class="empty"><div class="empty-icon">🔍</div><p>No tickets found.</p></div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Simulate Email Modal -->
+<div id="simModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:9999;align-items:center;justify-content:center;">
+  <div style="background:white;border-radius:10px;padding:28px;width:500px;max-width:95vw;box-shadow:0 20px 60px rgba(0,0,0,.2);">
+    <div style="font-size:16px;font-weight:700;margin-bottom:18px;">📧 Simulate Incoming Email Ticket</div>
+    <form method="POST" action="/admin/email/simulate">
+      <div class="form-grid2">
+        <div class="form-group"><label class="form-label">Sender Name</label><input type="text" name="sender_name" class="form-control" value="John Customer" required></div>
+        <div class="form-group"><label class="form-label">Sender Email</label><input type="email" name="sender_email" class="form-control" value="john@client.com" required></div>
+      </div>
+      <div class="form-group"><label class="form-label">Subject</label><input type="text" name="subject" class="form-control" value="Password Reset Request" required></div>
+      <div class="form-group"><label class="form-label">Email Body</label><textarea name="body" class="form-control" rows="4" required>Hi Team, I need help resetting my server password. Please assist.</textarea></div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;">
+        <button type="button" onclick="document.getElementById('simModal').style.display='none'" class="btn btn-white">Cancel</button>
+        <button type="submit" class="btn btn-primary">Create Ticket from Email →</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
