@@ -13,14 +13,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-python@v4
         with:
           python-version: '3.11'
+
       - run: pip install -r requirements.txt
+
       - name: Smoke test
         run: |
           python -c "
-          import os, sys
+          import os
           os.environ['DATABASE'] = '/tmp/test.db'
           from database import init_db
           init_db()
@@ -36,13 +39,17 @@ jobs:
     runs-on: ubuntu-latest
     needs: test
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
     steps:
       - uses: actions/checkout@v4
+
       - uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
+
       - uses: docker/setup-buildx-action@v3
+
       - uses: docker/build-push-action@v5
         with:
           context: .
@@ -58,23 +65,38 @@ jobs:
     runs-on: ubuntu-latest
     needs: build-and-push
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
     steps:
-      - uses: appleboy/ssh-action@v1
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
-            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/nexdesk:latest
-            docker stop nexdesk || true
-            docker rm nexdesk || true
-            docker run -d \
+            echo "Pull latest image"
+            podman pull ${{ secrets.DOCKERHUB_USERNAME }}/nexdesk:latest
+
+            echo "Stop old container"
+            podman stop nexdesk || true
+            podman rm nexdesk || true
+
+            echo "Run new container"
+            podman run -d \
               --name nexdesk \
-              --restart always \
+              --restart=always \
               -p 5000:5000 \
               -v nexdesk_data:/app/data \
               -e FLASK_ENV=production \
               -e DATABASE=/app/data/tickets.db \
               ${{ secrets.DOCKERHUB_USERNAME }}/nexdesk:latest
-            docker image prune -f
-            echo "Deployed successfully"
+
+            echo "Show running containers"
+            podman ps
+
+            echo "If container failed, print logs"
+            podman logs nexdesk || true
+
+            podman image prune -f
+
+            echo "Deploy completed"
