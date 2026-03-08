@@ -74,4 +74,7 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
+            grep -q 'docker.io' /etc/containers/registries.conf || \
+              echo 'unqualified-search-registries = ["docker.io"]' >> /etc/containers/registries.conf
+
             DOCKERHUB_USERNAME=${{ secrets.DOCKERHUB_USERNAME }} bash /app/deploy.sh
