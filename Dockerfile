@@ -9,9 +9,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-RUN sudo mkdir -p /app/data
+RUN mkdir -p /app/data
 
-RUN sudo useradd -m -u 1000 nexdesk && chown -R nexdesk:nexdesk /app
+RUN useradd -m -u 1000 nexdesk && chown -R nexdesk:nexdesk /app
 USER nexdesk
 
 EXPOSE 5000
